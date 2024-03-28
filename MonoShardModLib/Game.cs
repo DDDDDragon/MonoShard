@@ -18,5 +18,10 @@ namespace MonoShardModLib
             var hp = Player.Instance.HP;
             if (hp < 50) Player.Instance.HP = 100;
         }
+
+        public void InitializeWeapon(string ID)
+        {
+
+        }
     }
 }

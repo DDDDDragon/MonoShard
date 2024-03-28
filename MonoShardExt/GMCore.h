@@ -3,6 +3,7 @@
 #include "Structures/Documented/CCode/CCode.hpp"
 #include "Structures/Undocumented/CScript/CScript.hpp"
 #include "SDK/Structures/Undocumented/YYObjectBase/YYObjectBase.hpp"
+#include "SDK\Structures\Undocumented\VMExec\VMExec.hpp"
 #include "GMInterface.h"
 #include "MonoLoader.h"
 #include <vector>
@@ -38,4 +39,5 @@ class Utils
 	public:
 		static RValue GetInstanceProperty(const char* name, CInstance* self, CInstance* other);
 		static RValue SetInstanceProperty(const char* name, YYRValue value, CInstance* self, CInstance* other);
+		static RValue GetValueFromMap(const char* name, YYRValue map, CInstance* self, CInstance* other);
 };

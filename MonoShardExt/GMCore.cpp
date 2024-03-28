@@ -187,12 +187,27 @@ bool Hooks::hokExecuteCode(CInstance* self, CInstance* other, CCode* code, RValu
 	bool ret = pfnExecCodeOriginal(self, other, code, res, flags);
 	if (string(code->i_pName) == "gml_Object_o_player_Step_0")
 		MonoLoader::CallMethod(MonoLoader::Game, "PostUpdatePlayer", 0, nullptr);
+	if (string(code->i_pName) == "gml_Object_o_inv_slot_Other_10")
+	{
+		char* name = Utils::GetInstanceProperty("idName", self, other).String->m_Thing;
+		cout << name << endl;
+		void* args[1] = { mono_string_new(MonoLoader::s_AppDomain, name) };
+		MonoLoader::CallMethod(MonoLoader::Game, "InitializeWeapon", 1, args);
+	}
 	return ret;
 }
 
 char* Hooks::hokCallScript(CScript* script, int argc, char* pStack, VMExec* VM, YYObjectBase* locals, YYObjectBase* arguments)
 {
-	return pfnCallScriptOriginal(script, argc, pStack, VM, locals, arguments);
+	//script->s_script 函数名称
+	//VM->pName 当前所处的GameObject的Event名称
+	//(CInstance*)(VM->pSelf) 获取Self对象
+	//(CInstance*)(VM->pOther) 获取Other对象
+	//未知原因 获取不到self对应的local vars
+	//可能遍历locals可以搞到
+	char* ret = pfnCallScriptOriginal(script, argc, pStack, VM, locals, arguments);
+	
+	return ret;
 }
 
 
@@ -211,6 +226,13 @@ RValue Utils::SetInstanceProperty(const char* name, YYRValue value, CInstance* s
 {
 	RValue ret;
 	GMCore::CallBuiltin("variable_instance_set", ret, self, other, { float(self->i_id), name, value });
+	return ret;
+}
+
+RValue Utils::GetValueFromMap(const char* name, YYRValue map, CInstance* self, CInstance* other)
+{
+	RValue ret;
+	GMCore::CallBuiltin("ds_map_find_value", ret, self, other, { map, name });
 	return ret;
 }
 
