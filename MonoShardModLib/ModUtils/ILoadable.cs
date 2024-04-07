@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MonoShardModLib.Item
+namespace MonoShardModLib.ModUtils
 {
-    public class Item : GameObject
+    public interface ILoadable
     {
-        
+        public abstract void Load(Mod mod);
     }
 }

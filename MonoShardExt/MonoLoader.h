@@ -22,6 +22,7 @@ class MonoLoader
 		static void PrintAssemblyTypes(MonoAssembly* assembly);
 		static MonoClass* GetClassInAssembly(MonoAssembly* assembly, const char* namespaceName, const char* className);
 		static MonoObject* InstantiateClass(const char* namespaceName, const char* className);
+		static MonoObject* InstantiateClassWithoutInit(const char* namespaceName, const char* className);
 		static MonoObject* CallMethod(MonoObject* obj, const char* methodName, int argc, void** params);
 		static MonoObject* CallCtor(MonoObject* obj, int argc, void** params);
 };
@@ -33,4 +34,8 @@ class InternalCallings
 		static MonoString* TestFunc(MonoString* val);
 		static float GetInstancePropertyAsInteger(MonoString* name, int self, int other);
 		static void SetInstancePropertyAsInteger(MonoString* name, float value, int self, int other);
+		static MonoString* GetInstancePropertyAsString(MonoString* name, int self, int other);
+		static void SetInstancePropertyAsString(MonoString* name, MonoString* value, int self, int other);
+		static float GetValueFromMapAsInteger(MonoString* name, int map, CInstance* self, CInstance* other);
+		static void SetValueInMapAsInteger(MonoString* name, int map, float value, CInstance* self, CInstance* other);
 };

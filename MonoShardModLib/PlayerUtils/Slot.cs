@@ -8,6 +8,6 @@ namespace MonoShardModLib.PlayerUtils
 {
     public class Slot : GameObject
     {
-
+        public Slot(int self, int other) : base(self, other) { }
     }
 }

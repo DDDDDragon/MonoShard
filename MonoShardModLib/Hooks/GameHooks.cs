@@ -1,0 +1,17 @@
+﻿using MonoShardModLib.ItemUtils;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace MonoShardModLib.Hooks
+{
+    public class GameHooks
+    {
+        public virtual void InitializeWeapon(Weapon weapon)
+        {
+
+        }
+    }
+}

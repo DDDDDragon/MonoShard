@@ -21,8 +21,6 @@ void AttachC()
 	freopen("CONOUT$", "w", stdout);
 	std::cout << "Attach output to command successfully." << endl;
 }
-
-MonoDomain* MonoLoader::s_RootDomain = nullptr;
 MonoDomain* MonoLoader::s_AppDomain = nullptr;
 MonoAssembly* MonoLoader::s_AppAssembly = nullptr;
 MonoObject* MonoLoader::Game = nullptr;
@@ -32,12 +30,7 @@ void MonoLoader::InitMono()
 {
 	mono_set_assemblies_path("mono/lib/4.5");
 
-	MonoDomain* rootDomain = mono_jit_init("MyScriptRuntime");
-	if (rootDomain == nullptr) return;
-
-	s_RootDomain = rootDomain;
-
-	s_AppDomain = mono_domain_create_appdomain((char*)"MyAppDomain", nullptr);
+	s_AppDomain = mono_jit_init_version("MyScriptRuntime", "v6.12.0.200");
 	mono_domain_set(s_AppDomain, true);
 
 	InitInternalCall();
@@ -46,9 +39,10 @@ void MonoLoader::InitMono()
 
 	Game = InstantiateClass("MonoShardModLib", "Game");
 
-	MonoObject* ModLoader = InstantiateClass("MonoShardModLib", "ModLoader");
+	MonoClass* ModLoader = MonoLoader::GetClassInAssembly(s_AppAssembly, "MonoShardModLib", "ModLoader");
+	MonoMethod* Initialize = mono_class_get_method_from_name(ModLoader, "Initialize", 0);
 
-	CallMethod(ModLoader, "Initialize", 0, nullptr);
+	mono_runtime_invoke(Initialize, NULL, nullptr, nullptr);
 	return;
 }
 
@@ -58,6 +52,10 @@ void MonoLoader::InitInternalCall()
 	mono_add_internal_call("MonoShardModLib.Core::TestFunc", InternalCallings::TestFunc);
 	mono_add_internal_call("MonoShardModLib.Core::GetInstancePropertyAsInteger", InternalCallings::GetInstancePropertyAsInteger);
 	mono_add_internal_call("MonoShardModLib.Core::SetInstancePropertyAsInteger", InternalCallings::SetInstancePropertyAsInteger);
+	mono_add_internal_call("MonoShardModLib.Core::GetInstancePropertyAsString", InternalCallings::GetInstancePropertyAsString);
+	mono_add_internal_call("MonoShardModLib.Core::SetInstancePropertyAsString", InternalCallings::SetInstancePropertyAsString);
+	mono_add_internal_call("MonoShardModLib.Core::GetValueFromMapAsInteger", InternalCallings::GetValueFromMapAsInteger);
+	mono_add_internal_call("MonoShardModLib.Core::SetValueInMapAsInteger", InternalCallings::SetValueInMapAsInteger);
 }
 
 char* ReadBytes(const std::string& filePath, uint32_t* outSize)
@@ -148,6 +146,19 @@ MonoObject* MonoLoader::InstantiateClass(const char* namespaceName, const char* 
 	return classInstance;
 }
 
+MonoObject* MonoLoader::InstantiateClassWithoutInit(const char* namespaceName, const char* className)
+{
+	MonoClass* testingClass = GetClassInAssembly(s_AppAssembly, namespaceName, className);
+
+	MonoObject* classInstance = mono_object_new(s_AppDomain, testingClass);
+
+	if (classInstance == nullptr)
+	{
+		return NULL;
+	}
+	return classInstance;
+}
+
 MonoObject* MonoLoader::CallMethod(MonoObject* obj, const char* methodName, int argc, void** params)
 {
 	MonoClass* klass = mono_object_get_class(obj);
@@ -185,5 +196,29 @@ float InternalCallings::GetInstancePropertyAsInteger(MonoString* name, int self,
 void InternalCallings::SetInstancePropertyAsInteger(MonoString* name, float value, int self, int other)
 {
 	Utils::SetInstanceProperty(mono_string_to_utf8(name), value, (CInstance*)self, (CInstance*)other);
+	return;
+}
+
+MonoString* InternalCallings::GetInstancePropertyAsString(MonoString* name, int self, int other)
+{
+	RValue val = Utils::GetInstanceProperty(mono_string_to_utf8(name), (CInstance*)self, (CInstance*)other);
+	return KIND_RValue(&val) == VALUE_STRING ? mono_string_new(MonoLoader::s_AppDomain, val.String->m_Thing) : mono_string_new(MonoLoader::s_AppDomain, "");
+}
+
+void InternalCallings::SetInstancePropertyAsString(MonoString* name, MonoString* value, int self, int other)
+{
+	Utils::SetInstanceProperty(mono_string_to_utf8(name), mono_string_to_utf8(value), (CInstance*)self, (CInstance*)other);
+	return;
+}
+
+float InternalCallings::GetValueFromMapAsInteger(MonoString* name, int map, CInstance* self, CInstance* other)
+{
+	RValue val = Utils::GetValueFromMap(mono_string_to_utf8(name), (float)map, self, other);
+	return KIND_RValue(&val) == VALUE_REAL ? val.Real : 0;
+}
+
+void InternalCallings::SetValueInMapAsInteger(MonoString* name, int map, float value, CInstance* self, CInstance* other)
+{
+	Utils::SetValueInMap(mono_string_to_utf8(name), (float)map, value, self, other);
 	return;
 }

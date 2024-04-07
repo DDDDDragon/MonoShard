@@ -18,7 +18,6 @@ class GMCore
 		static char* GetString(int address, const int length);
 		static void LoadBuiltins();
 		static void InitializeCore();
-		static void CallBuiltin(const char* name, RValue& result, CInstance* self, CInstance* other, const vector<RValue>& args);
 		static void CallBuiltin(const char* name, RValue& result, CInstance* self, CInstance* other, const vector<YYRValue>& args);
 };
 
@@ -39,5 +38,8 @@ class Utils
 	public:
 		static RValue GetInstanceProperty(const char* name, CInstance* self, CInstance* other);
 		static RValue SetInstanceProperty(const char* name, YYRValue value, CInstance* self, CInstance* other);
+		static RValue GetValueFromList(int index, YYRValue map, CInstance* self, CInstance* other);
+		static RValue SetValueInList(int index, YYRValue map, YYRValue value, CInstance* self, CInstance* other);
 		static RValue GetValueFromMap(const char* name, YYRValue map, CInstance* self, CInstance* other);
+		static RValue SetValueInMap(const char* name, YYRValue map, YYRValue value, CInstance* self, CInstance* other);
 };

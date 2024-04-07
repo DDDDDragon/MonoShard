@@ -84,7 +84,7 @@ void GMCore::InitializeCore()
 	LoadBuiltins();
 
 	RValue res = {};
-	CallBuiltin("@@GlobalScope@@", res, nullptr, nullptr, vector<RValue>{});
+	CallBuiltin("@@GlobalScope@@", res, nullptr, nullptr, {});
 
 	gAPIVars.Globals.g_pGlobalObject = res.Object;
 
@@ -111,20 +111,6 @@ void GMCore::LoadBuiltins()
 	}
 }
 
-void GMCore::CallBuiltin(const char* name, RValue& result, CInstance* self, CInstance* other, const vector<RValue>& args)
-{
-	bool global = !self && !other;
-
-	if (BuiltinFunctions.count(name) == 0)
-	{
-		cout << "Cannot find builtin function with the name of " << name << "." << endl;
-		return;
-	}
-
-	if (global) BuiltinFunctions[name].Invoke(result, gAPIVars.Globals.g_pGlobalInstance, gAPIVars.Globals.g_pGlobalInstance, args.size(), (RValue*)args.data());
-	else BuiltinFunctions[name].Invoke(result, self, other, args.size(), (RValue*)args.data());
-}
-
 void GMCore::CallBuiltin(const char* name, RValue& result, CInstance* self, CInstance* other, const vector<YYRValue>& args)
 {
 	bool global = !self && !other;
@@ -145,7 +131,7 @@ void GMCore::CallBuiltin(const char* name, RValue& result, CInstance* self, CIns
 template <typename T>
 inline MH_STATUS Hook(LPVOID pTarget, LPVOID pHook, T * *ppOriginal, const char* name)
 {
-	cout << "Hooking." << endl;
+	cout << "Hooking at " << name << "." << endl;
 
 	return MH_CreateHook(pTarget, pHook, reinterpret_cast<LPVOID*>(ppOriginal));
 }
@@ -171,9 +157,15 @@ void Hooks::InnerHooks()
 	MH_EnableHook(rei<void*>(GameAddress::CallAddr));
 }
 
+float testReal = -1;
+CInstance* testSelf;
+CInstance* testOther;
+
 bool Hooks::hokExecuteCode(CInstance* self, CInstance* other, CCode* code, RValue* res, int flags)
 {
-	if (string(code->i_pName) == "gml_Object_o_player_Step_0")
+	string name = string(code->i_pName);
+
+	if (name == "gml_Object_o_player_Step_0")
 	{
 		if (MonoLoader::Player == nullptr)
 		{
@@ -184,15 +176,30 @@ bool Hooks::hokExecuteCode(CInstance* self, CInstance* other, CCode* code, RValu
 		}
 		MonoLoader::CallMethod(MonoLoader::Game, "PreUpdatePlayer", 0, nullptr);
 	}
+
 	bool ret = pfnExecCodeOriginal(self, other, code, res, flags);
-	if (string(code->i_pName) == "gml_Object_o_player_Step_0")
+
+	if (name == "gml_Object_o_player_Step_0")
 		MonoLoader::CallMethod(MonoLoader::Game, "PostUpdatePlayer", 0, nullptr);
-	if (string(code->i_pName) == "gml_Object_o_inv_slot_Other_10")
+
+	if (name == "gml_Object_o_inv_slot_Other_17")
 	{
-		char* name = Utils::GetInstanceProperty("idName", self, other).String->m_Thing;
-		cout << name << endl;
-		void* args[1] = { mono_string_new(MonoLoader::s_AppDomain, name) };
-		MonoLoader::CallMethod(MonoLoader::Game, "InitializeWeapon", 1, args);
+		//Object的id 前8位是ref type 后8位是id
+		//cout << (Utils::GetInstanceProperty("id", self, other).I64 & 0xFFFFFFFF) << endl;
+
+		void* args[3] = { 
+			mono_string_new(MonoLoader::s_AppDomain, Utils::GetInstanceProperty("idName", self, other).String->m_Thing),
+			&self,
+			&other
+		};
+
+		MonoClass* weaponKlass = MonoLoader::GetClassInAssembly(MonoLoader::s_AppAssembly, "MonoShardModLib.ItemUtils", "Weapon");
+		MonoMethod* createInstance = mono_class_get_method_from_name(weaponKlass, "CreateInstance", 3);
+		MonoObject* weapon = mono_runtime_invoke(createInstance, NULL, args, nullptr);
+
+		void* args_[1] = { weapon };
+
+		MonoLoader::CallMethod(MonoLoader::Game, "InitializeWeapon", 1, args_);
 	}
 	return ret;
 }
@@ -205,6 +212,9 @@ char* Hooks::hokCallScript(CScript* script, int argc, char* pStack, VMExec* VM, 
 	//(CInstance*)(VM->pOther) 获取Other对象
 	//未知原因 获取不到self对应的local vars
 	//可能遍历locals可以搞到
+	CInstance* self = (CInstance*)(VM->pSelf);
+	CInstance* other = (CInstance*)(VM->pOther);
+
 	char* ret = pfnCallScriptOriginal(script, argc, pStack, VM, locals, arguments);
 	
 	return ret;
@@ -229,10 +239,31 @@ RValue Utils::SetInstanceProperty(const char* name, YYRValue value, CInstance* s
 	return ret;
 }
 
+RValue Utils::GetValueFromList(int index, YYRValue list, CInstance* self, CInstance* other)
+{
+	RValue ret;
+	GMCore::CallBuiltin("ds_list_find_value", ret, self, other, { list, (float)index });
+	return ret;
+}
+
+RValue Utils::SetValueInList(int index, YYRValue list, YYRValue value, CInstance* self, CInstance* other)
+{
+	RValue ret;
+	GMCore::CallBuiltin("ds_list_replace", ret, self, other, { list, (float)index, value});
+	return ret;
+}
+
 RValue Utils::GetValueFromMap(const char* name, YYRValue map, CInstance* self, CInstance* other)
 {
 	RValue ret;
 	GMCore::CallBuiltin("ds_map_find_value", ret, self, other, { map, name });
+	return ret;
+}
+
+RValue Utils::SetValueInMap(const char* name, YYRValue map, YYRValue value, CInstance* self, CInstance* other)
+{
+	RValue ret;
+	GMCore::CallBuiltin("ds_map_replace", ret, self, other, { map, name, value });
 	return ret;
 }
 
