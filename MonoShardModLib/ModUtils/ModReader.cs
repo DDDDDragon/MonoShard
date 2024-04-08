@@ -18,7 +18,7 @@ namespace MonoShardModLib.ModUtils
         {
             fs = new(path, FileMode.Open);
 
-            string modName = fs.Name.Split("\\")[^1].Replace(".sml", "");
+            string modName = fs.Name.Split('\\').Last().Replace(".sml", "");
 
             if (Encoding.UTF8.GetString(Read(fs, 4)) != "MSLM") Error();
             
@@ -28,13 +28,13 @@ namespace MonoShardModLib.ModUtils
             int count = BitConverter.ToInt32(Read(fs, 4), 0);
             for (int i = 0; i < count; i++)
             {
-                int fileSize = BitConverter.ToInt32(Read(fs, 4));
+                int fileSize = BitConverter.ToInt32(Read(fs, 4), 0);
 
                 ModFileChunk chunk = new()
                 {
                     Name = Encoding.UTF8.GetString(Read(fs, fileSize)),
-                    Offset = BitConverter.ToInt32(Read(fs, 4)),
-                    Size = BitConverter.ToInt32(Read(fs, 4))
+                    Offset = BitConverter.ToInt32(Read(fs, 4), 0),
+                    Size = BitConverter.ToInt32(Read(fs, 4), 0)
                 };
 
                 files.Files?.Add(chunk);
@@ -44,12 +44,12 @@ namespace MonoShardModLib.ModUtils
 
             if (files.Files?.Count > 0)
             {
-                ModFileChunk? f = files.Files?[^1];
+                ModFileChunk? f = files.Files.Last();
 
                 Read(fs, (int)(f?.Offset + f?.Size));
             }
 
-            int size = BitConverter.ToInt32(Read(fs, 4));
+            int size = BitConverter.ToInt32(Read(fs, 4), 0);
             files.Assembly = Assembly.Load(Read(fs, size));
 
             try {
@@ -92,7 +92,7 @@ namespace MonoShardModLib.ModUtils
             if (fs.Length - fs.Position < length)
             {
                 fs.Close();
-                throw new Exception(string.Format("In FileReader.Read cannot read {0} bytes in the mod {1} ", length, fs.Name.Split("\\")[^1]));
+                throw new Exception(string.Format("In FileReader.Read cannot read {0} bytes in the mod {1} ", length, fs.Name.Split('\\').Last()));
             }
             fs.Read(bytes, 0, length);
             return bytes;

@@ -9,15 +9,15 @@ namespace MonoShardModLib
 {
     public abstract class GameObject : ILoadable
     {
-        public virtual string Name => "";
+        public virtual string ObjName => "";
 
         public int Self { get; internal set; }
-        
+
         public int Other { get; internal set; }
 
         public int InstanceID { get; internal set; }
 
-        public bool IsMod { get => ModLoader.ModObjects.Find(t => t.Name == (Name == "" ? GetType().Name : Name)) != default; }
+        public bool IsMod { get => ModLoader.ModObjects.Exists(t => t.Name == (ObjName == "" ? GetType().Name : ObjName)); }
 
         public Mod? Mod { get; internal set; }
 
@@ -43,7 +43,7 @@ namespace MonoShardModLib
 
             set
             {
-                switch(type)
+                switch (type)
                 {
                     case "double":
                         Core.SetInstancePropertyAsInteger(name, (float)value, Self, Other);

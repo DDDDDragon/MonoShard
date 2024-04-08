@@ -5,10 +5,9 @@ using Microsoft.CodeAnalysis.Emit;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace MonoShardModLib.ModUtils
 {
@@ -19,11 +18,9 @@ namespace MonoShardModLib.ModUtils
             DirectoryInfo dir = new(path);
             FileInfo[] textures = dir.GetFiles("*.png", SearchOption.AllDirectories);
 
-            Console.WriteLine(path);
-
             int offset = 0;
 
-            FileStream fs = new(Path.Join(ModLoader.ModPath, dir.Name + ".sml"), FileMode.Create);
+            FileStream fs = new(Path.Combine(ModLoader.ModPath, dir.Name + ".sml"), FileMode.Create);
 
             Write(fs, "MSLM");
 
@@ -50,32 +47,35 @@ namespace MonoShardModLib.ModUtils
             Write(fs, code.Length);
             Write(fs, code);
             fs.Close();
+
+            Console.WriteLine($"Successfully pack {dir.Name}.");
         }
 
         public static void Write(FileStream fs, object obj)
         {
-            Type type = obj.GetType();
-            if (type == typeof(int))
+            byte[] bytes;
+            switch (obj)
             {
-                byte[]? bytes = BitConverter.GetBytes((int)obj);
-                fs.Write(bytes, 0, bytes.Length);
-            }
-            else if (type == typeof(string))
-            {
-                byte[]? bytes = Encoding.UTF8.GetBytes((string)obj);
-                fs.Write(bytes, 0, bytes.Length);
-            }
-            else if (type == typeof(FileInfo))
-            {
-                FileStream stream = new(((FileInfo)obj).FullName, FileMode.Open);
-                byte[]? bytes = new byte[stream.Length];
-                stream.Read(bytes, 0, bytes.Length);
-                fs.Write(bytes, 0, bytes.Length);
-                stream.Close();
-            }
-            else if (type == typeof(byte[]))
-            {
-                fs.Write((byte[])obj);
+                case int num:
+                    bytes = BitConverter.GetBytes(num);
+                    fs.Write(bytes, 0, bytes.Length);
+                    break;
+                case string str:
+                    bytes = Encoding.UTF8.GetBytes(str);
+                    fs.Write(bytes, 0, bytes.Length);
+                    break;
+                case FileInfo info:
+                    FileStream stream = new(info.FullName, FileMode.Open);
+                    bytes = new byte[stream.Length];
+                    stream.Read(bytes, 0, bytes.Length);
+                    fs.Write(bytes, 0, bytes.Length);
+                    stream.Close();
+                    break;
+                case byte[] data:
+                    fs.Write(data, 0, data.Length);
+                    break;
+                default:
+                    break;
             }
         }
 
@@ -90,7 +90,7 @@ namespace MonoShardModLib.ModUtils
 
             EmitOptions emitOptions = new(debugInformationFormat: DebugInformationFormat.PortablePdb);
 
-            string[] dlls = Directory.GetFiles(Environment.CurrentDirectory, "*.dll");
+            string[] dlls = Directory.GetFiles(Path.Combine(ModLoader.GenPath, "mono\\lib\\4.5"), "*.dll");
 
             List<MetadataReference> defaultReferences = dlls.ToList()
                 .ConvertAll(
@@ -102,39 +102,6 @@ namespace MonoShardModLib.ModUtils
             IEnumerable<SyntaxTree> src = files.Select(f => SyntaxFactory.ParseSyntaxTree(File.ReadAllText(f), parseOptions, f, Encoding.UTF8));
 
             CSharpCompilation comp = CSharpCompilation.Create(name, src, defaultReferences, options);
-
-            foreach (MetadataReference usedAssemblyReferences in comp.GetUsedAssemblyReferences())
-            {
-                if (usedAssemblyReferences.Display != null)
-                {
-                    FileVersionInfo fileVersionInfo = FileVersionInfo.GetVersionInfo(usedAssemblyReferences.Display);
-                }
-                else
-                {
-
-                }
-
-            }
-
-            foreach (SyntaxTree tree in comp.SyntaxTrees)
-            {
-                // get the semantic model for this tree
-                SemanticModel model = comp.GetSemanticModel(tree);
-
-                // find everywhere in the AST that refers to a type
-                SyntaxNode root = tree.GetRoot();
-                IEnumerable<TypeSyntax> allTypeNames = root.DescendantNodesAndSelf().OfType<TypeSyntax>();
-
-                foreach (TypeSyntax typeName in allTypeNames)
-                {
-                    // what does roslyn think the type _name_ actually refers to?
-                    Microsoft.CodeAnalysis.TypeInfo effectiveType = model.GetTypeInfo(typeName);
-                    if (effectiveType.Type != null && effectiveType.Type.TypeKind == TypeKind.Error)
-                    {
-                        // if it's an error type (ie. couldn't be resolved), cast and proceed
-                    }
-                }
-            }
 
             using MemoryStream peStream = new();
             using MemoryStream pdbStream = new();
@@ -153,25 +120,10 @@ namespace MonoShardModLib.ModUtils
                 .GetFiles(path, "*.cs", SearchOption.AllDirectories)
                 .Where(file => !IgnoreCompletely(name, file));
 
-            Diagnostic[] result = RoslynCompile(name, files, new[] { "FNA" }, out code, out pdb);
-
-            foreach (Diagnostic err in result.Where(e => e.Severity == DiagnosticSeverity.Error))
-            {
-
-            }
-            foreach (Diagnostic warning in result.Where(e => e.Severity == DiagnosticSeverity.Warning))
-            {
-
-            }
-            foreach (Diagnostic info in result.Where(e => e.Severity == DiagnosticSeverity.Info))
-            {
-
-            }
+            Diagnostic[] result = RoslynCompile(name, files, [], out code, out pdb);
 
             if (Array.Exists(result, e => e.Severity == DiagnosticSeverity.Error))
-            {
                 return false;
-            }
             return true;
         }
 

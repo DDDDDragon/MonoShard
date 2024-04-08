@@ -1,16 +1,23 @@
-﻿using MonoShardModLib.Hooks;
+﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Emit;
+using MonoShardModLib.Hooks;
 using MonoShardModLib.ModUtils;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Xml.Linq;
 
 namespace MonoShardModLib
 {
     public class ModLoader
     {
         public static string GenPath => Core.GetGenPath();
-        public static string ModPath => Path.Join(GenPath, "Mods");
-        public static string ModSourcePath => Path.Join(GenPath, "ModSources");
+        public static string ModPath => Path.Combine(GenPath, "Mods");
+        public static string ModSourcePath => Path.Combine(GenPath, "ModSources");
 
         public static List<Mod> Mods = new();
         public static List<Mod> EnabledMods = new();

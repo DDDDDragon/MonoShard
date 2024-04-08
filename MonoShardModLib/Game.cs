@@ -6,13 +6,6 @@ namespace MonoShardModLib
 {
     public class Game
     {
-        public Game Instance { get; private set; }
-
-        public Game()
-        {
-            Instance = this;
-        }
-
         public void PreUpdatePlayer()
         {
             if (Player.Instance == null) return;
@@ -29,13 +22,18 @@ namespace MonoShardModLib
 
         public void InitializeWeapon(Weapon weapon)
         {
-            if (weapon.IsMod)
+            if(weapon.IsMod)
             {
-                weapon.SetWeaponDefaults();
-            }
 
-            foreach (var hook in ModLoader.Hooks)
-                hook.InitializeWeapon(weapon);
+            }
+            else
+            {
+                if (weapon.IdName == "Travelling Staff")
+                {
+                    Console.WriteLine("You have travelling staff");
+                    weapon.BluntDamage = 1000;
+                }
+            }
         }
     }
 }

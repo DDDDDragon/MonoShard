@@ -14,6 +14,8 @@ namespace MonoShardModLib.PlayerUtils
         public Player(int self, int other) : base(self, other)
         {
             Instance = this;
+            Self = self;
+            Other = other;
         }
 
         public int HP 
