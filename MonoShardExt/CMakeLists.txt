@@ -18,7 +18,7 @@ link_directories(NativeLib)
 file(GLOB_RECURSE native_srcs SDK/*.cpp)
 
 # 将源代码添加到此项目的可执行文件。
-add_library (MonoShardExt SHARED    "MonoLoader.h" "Export.h" "GMCore.cpp"  "GameAddress.h" "MonoLoader.cpp" "GMInterface.h" ${native_srcs})
+add_library (MonoShardExt SHARED    "MonoLoader.h" "Export.h" "GMCore.cpp"  "GameAddress.h" "MonoLoader.cpp" "GMInterface.h" ${native_srcs}  "Utils.h" "Utils.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET MonoShardExt PROPERTY CXX_STANDARD 20)

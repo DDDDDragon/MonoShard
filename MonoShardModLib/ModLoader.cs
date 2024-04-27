@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Xml.Linq;
 
 namespace MonoShardModLib
@@ -26,12 +27,16 @@ namespace MonoShardModLib
 
         public static void Initialize()
         {
-            //if (!Directory.Exists(ModPath)) Directory.CreateDirectory(ModPath);
-            //if (!Directory.Exists(ModSourcePath)) Directory.CreateDirectory(ModSourcePath);
+            if (!Directory.Exists(ModPath)) Directory.CreateDirectory(ModPath);
+            if (!Directory.Exists(ModSourcePath)) Directory.CreateDirectory(ModSourcePath);
             Console.WriteLine("Successfully run MonoShard.");
 
             Console.WriteLine(ModPath);
 
+            Thread thread = new Thread(() => {
+                Console.WriteLine("ModLoader thread starts.");
+            });
+            thread.Start();
             //ModPacker.Pack(Path.Combine(ModSourcePath, "testMod"));
         }
 

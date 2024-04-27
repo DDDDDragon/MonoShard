@@ -9,6 +9,7 @@
 #include "GMInterface.h"
 #include "Export.h"
 #include "GMCore.h"
+#include "Utils.h"
 #include "SDK/Structures/Undocumented/YYObjectBase/YYObjectBase.hpp"
 #include "SDK/Structures/Documented/RefThing/RefThing.hpp"
 #pragma comment(lib, "mono-2.0-sgen.lib")

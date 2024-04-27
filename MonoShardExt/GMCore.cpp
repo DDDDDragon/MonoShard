@@ -1,8 +1,10 @@
 #include <cstdint>
 #include <map>
+#include <stdio.h>
 #include <string>
 #include <vector>
 #include <iostream>
+#include <fstream>
 #include <iomanip>
 #include "GMCore.h"
 #include "GameAddress.h"
@@ -11,6 +13,7 @@
 #include "SDK/Structures/Documented/RefThing/RefThing.hpp"
 #include "GMInterface.h"
 #include "MinHook.h"
+#include "Utils.h"
 
 #pragma comment(lib, "libMinHook.lib")
 
@@ -82,7 +85,7 @@ char* GMCore::GetString(int address, const int length)
 void GMCore::InitializeCore()
 {
 	LoadBuiltins();
-
+	Utils::LoadInnerFunctions();
 	RValue res = {};
 	CallBuiltin("@@GlobalScope@@", res, nullptr, nullptr, {});
 
@@ -201,6 +204,18 @@ bool Hooks::hokExecuteCode(CInstance* self, CInstance* other, CCode* code, RValu
 
 		MonoLoader::CallMethod(MonoLoader::Game, "InitializeWeapon", 1, args_);
 	}
+
+	if (name == "gml_Object_o_dataLoader_Other_10")
+	{
+		cout << *(int*)GameAddress::SpritesCount << endl;
+
+		Utils::AddSprite("C:\\Users\\ASUS\\AppData\\Local\\StoneShard\\tModLoader.png");
+
+		RValue val;
+		GMCore::CallBuiltin("sprite_get_name", val, self, other, { 12842.0 });
+
+		cout << val.String->m_Thing << endl;
+	}
 	return ret;
 }
 
@@ -212,58 +227,16 @@ char* Hooks::hokCallScript(CScript* script, int argc, char* pStack, VMExec* VM, 
 	//(CInstance*)(VM->pOther) 获取Other对象
 	//未知原因 获取不到self对应的local vars
 	//可能遍历locals可以搞到
+	string name = string(script->s_script);
+
 	CInstance* self = (CInstance*)(VM->pSelf);
 	CInstance* other = (CInstance*)(VM->pOther);
 
 	char* ret = pfnCallScriptOriginal(script, argc, pStack, VM, locals, arguments);
-	
-	return ret;
-}
 
+	self = (CInstance*)(VM->pSelf);
+	other = (CInstance*)(VM->pOther);
 
-// Get a instance's property.
-// 获取某个实例的某个属性
-RValue Utils::GetInstanceProperty(const char* name, CInstance* self, CInstance* other)
-{
-	RValue ret;
-	GMCore::CallBuiltin("variable_instance_get", ret, self, other, { float(self->i_id), name });
-	return ret;
-}
-
-// Set a instance's property.
-// 设置某个实例的某个属性
-RValue Utils::SetInstanceProperty(const char* name, YYRValue value, CInstance* self, CInstance* other)
-{
-	RValue ret;
-	GMCore::CallBuiltin("variable_instance_set", ret, self, other, { float(self->i_id), name, value });
-	return ret;
-}
-
-RValue Utils::GetValueFromList(int index, YYRValue list, CInstance* self, CInstance* other)
-{
-	RValue ret;
-	GMCore::CallBuiltin("ds_list_find_value", ret, self, other, { list, (float)index });
-	return ret;
-}
-
-RValue Utils::SetValueInList(int index, YYRValue list, YYRValue value, CInstance* self, CInstance* other)
-{
-	RValue ret;
-	GMCore::CallBuiltin("ds_list_replace", ret, self, other, { list, (float)index, value});
-	return ret;
-}
-
-RValue Utils::GetValueFromMap(const char* name, YYRValue map, CInstance* self, CInstance* other)
-{
-	RValue ret;
-	GMCore::CallBuiltin("ds_map_find_value", ret, self, other, { map, name });
-	return ret;
-}
-
-RValue Utils::SetValueInMap(const char* name, YYRValue map, YYRValue value, CInstance* self, CInstance* other)
-{
-	RValue ret;
-	GMCore::CallBuiltin("ds_map_replace", ret, self, other, { map, name, value });
 	return ret;
 }
 

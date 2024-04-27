@@ -33,13 +33,28 @@ class Hooks
 		static inline decltype(&hokCallScript) pfnCallScriptOriginal;
 };
 
-class Utils
+struct retVal
 {
-	public:
-		static RValue GetInstanceProperty(const char* name, CInstance* self, CInstance* other);
-		static RValue SetInstanceProperty(const char* name, YYRValue value, CInstance* self, CInstance* other);
-		static RValue GetValueFromList(int index, YYRValue map, CInstance* self, CInstance* other);
-		static RValue SetValueInList(int index, YYRValue map, YYRValue value, CInstance* self, CInstance* other);
-		static RValue GetValueFromMap(const char* name, YYRValue map, CInstance* self, CInstance* other);
-		static RValue SetValueInMap(const char* name, YYRValue map, YYRValue value, CInstance* self, CInstance* other);
+	int idk0;
+	int idk1;
+	int line;
+	int idk2;
+	//LODWORD(VM->pStack) + LODWORD(VM->stackSize) - v19
+	int v20;
+	int localCount;
+	//LODWORD(VM->pStack) + LODWORD(VM->stackSize) - v11
+	int idk3;
+	int idk4;
+	CInstance* pSelf;
+	CInstance* pOther;
+	CCode* pCCode;
+	VMBuffer* pBuffer;
+	VMBuffer* pDebugInfo;
+	const char* pScript;
+	char* pName;
+	void* idk5;
+	void* idk6;
+	YYObjectBase* pLocals;
+	void* idk7;
+	void* v22;
 };
